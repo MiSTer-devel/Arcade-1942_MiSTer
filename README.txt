@@ -13,6 +13,7 @@
 --   F1         : Start 1 player
 --   F2         : Start 2 players
 --   F3         : Add Coin
+--   F4         : Pause
 --   SPACE      : Jump
 --   CTRL,ALT   : Fire
 --   UP,DOWN,LEFT,RIGHT : Movements
