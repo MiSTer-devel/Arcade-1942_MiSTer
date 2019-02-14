@@ -105,13 +105,12 @@ localparam CONF_STR = {
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire clk_sys, clk_rom;
+wire clk_sys;
 
 pll pll
 (
 	.refclk(CLK_50M),
-	.outclk_0(clk_sys),
-	.outclk_1(clk_rom)
+	.outclk_0(clk_sys)
 );
 
 reg ce_12, ce_6, ce_3, ce_1p5;
@@ -245,37 +244,12 @@ arcade_rotate_fx #(256,224,12,1) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
+reg prog_we;
+always @(posedge clk_sys) prog_we <= ioctl_wr;
 
-reg rom_we_l, rom_we_u;
-reg [16:0] down_addr;
-
-localparam OBJADDR = 18'd106496;
-wire [17:0] obj_addr = ioctl_addr[17:0] - OBJADDR;
-
-always @(posedge clk_sys) begin
-	rom_we_l <= 0;
-	rom_we_u <= 0;
-	if(ioctl_wr) begin
-		if(ioctl_addr < OBJADDR) begin
-			down_addr <= ioctl_addr[17:1];
-			rom_we_l <= ioctl_addr[0];
-			rom_we_u <= ~ioctl_addr[0];
-		end
-		else if(ioctl_addr < (OBJADDR+131072)) begin
-			down_addr <= OBJADDR[17:1] + {obj_addr[16:15], obj_addr[13:0]};
-			rom_we_l <= obj_addr[14];
-			rom_we_u <= ~obj_addr[14];
-		end
-	end
-end
-
-wire [9:0] prom_we;
-jt1942_prom_we u_prom_we(
-    .downloading    ( ioctl_download   ), 
-    .romload_addr   ( ioctl_addr[24:0] ),
-    .prom_we        ( prom_we          )
-);
-
+wire [16:0] prog_addr;
+wire  [7:0] prog_data;
+wire  [1:0] prog_mask; 
 wire [15:0] rom_data;
 wire [16:0] rom_addr;
 
@@ -286,9 +260,9 @@ jtgng_prom #(.dw(8), .aw(17)) u_rom_l
 	.rd_addr( rom_addr       ),
 	.q      ( rom_data[7:0]  ),
 
-	.wr_addr( down_addr      ),
-	.data   ( ioctl_dout     ),
-	.we     ( rom_we_l       )
+	.wr_addr( prog_addr      ),
+	.data   ( prog_data      ),
+	.we     ( ~prog_mask[0] & prog_we )
 );
 
 jtgng_prom #(.dw(8), .aw(17)) u_rom_u
@@ -298,19 +272,20 @@ jtgng_prom #(.dw(8), .aw(17)) u_rom_u
 	.rd_addr( rom_addr       ),
 	.q      ( rom_data[15:8] ),
 
-	.wr_addr( down_addr      ),
-	.data   ( ioctl_dout     ),
-	.we     ( rom_we_u       )
+	.wr_addr( prog_addr      ),
+	.data   ( prog_data      ),
+	.we     ( ~prog_mask[1] & prog_we )
 );
+
+///////////////////////////////////////////////////////////////////
 
 wire reset = RESET | status[0] | buttons[1];
 
 jt1942_game game
 (
 	.rst(reset),
-	.soft_rst(reset),
 
-	.clk_rom(clk_rom),
+	.clk_rom(clk_sys),
 	.clk(clk_sys),
 	.cen12(ce_12),
 	.cen6(ce_6),
@@ -331,24 +306,18 @@ jt1942_game game
 	.coin_input(~{1'b0,m_coin}),
 
 	// SDRAM interface
-	.downloading ( 0        ),
+	.downloading ( ioctl_download ),
 	.loop_rst    ( reset    ),
 	.sdram_addr  ( rom_addr ),
 	.data_read   ( rom_data ),
 
 	// PROM programming
-	.prog_addr   ( ioctl_addr[7:0] ),
-	.prog_din    ( ioctl_dout[3:0] ),
-	.prom_k6_we  ( prom_we[0] & ioctl_wr ),
-	.prom_d1_we  ( prom_we[1] & ioctl_wr ),
-	.prom_d2_we  ( prom_we[2] & ioctl_wr ),
-	.prom_d6_we  ( prom_we[3] & ioctl_wr ),
-	.prom_e8_we  ( prom_we[4] & ioctl_wr ),
-	.prom_e9_we  ( prom_we[5] & ioctl_wr ),
-	.prom_e10_we ( prom_we[6] & ioctl_wr ),
-	.prom_f1_we  ( prom_we[7] & ioctl_wr ), 
-	.prom_k3_we  ( prom_we[8] & ioctl_wr ), 
-	.prom_m11_we ( prom_we[9] & ioctl_wr ),
+	.ioctl_addr(ioctl_addr),
+	.ioctl_data(ioctl_dout),
+	.ioctl_wr(ioctl_wr),
+	.prog_addr(prog_addr),
+	.prog_data(prog_data),
+	.prog_mask(prog_mask),
 
 	.cheat_invincible( status[10]  ),
 	.dip_pause   ( ~pause         ),

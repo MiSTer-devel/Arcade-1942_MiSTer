@@ -17,7 +17,7 @@
     Date: 27-10-2017 */
 
 module jtgng_prom #(parameter dw=8, aw=10, simfile="", 
-    check_time=90_000_000,
+    check_time=200_000_000,
     cen_rd=0
 )(
     input   clk,
@@ -33,22 +33,25 @@ reg [dw-1:0] mem[0:(2**aw)-1];
 
 `ifdef SIMULATION
 integer f, readcnt; 
-// load the file
-initial 
-if( simfile != "" ) begin
-    f=$fopen(simfile,"rb");
-    if( f != 0 ) begin    
-        readcnt=$fread( mem, f );
-        $fclose(f);
-    end else begin
-        $display("WARNING: Cannot open file %s", simfile);
-    end
-    end
-else begin
-    for( readcnt=0; readcnt<(2**aw)-1; readcnt=readcnt+1 )
-        mem[readcnt] = {dw{1'b0}};
-    end
-// check contents after 80ms
+    `ifndef LOADROM // Only load the file if there is not going to be
+        // a SPI transfer in the simulation
+        initial  // load the file
+        if( simfile != "" ) begin
+            f=$fopen(simfile,"rb");
+            if( f != 0 ) begin    
+                readcnt=$fread( mem, f );
+                $fclose(f);
+                $display("INFO: Loaded file %s into %m", simfile);
+            end else begin
+                $display("WARNING: Cannot open file %s", simfile);
+            end
+            end
+        else begin
+            for( readcnt=0; readcnt<(2**aw)-1; readcnt=readcnt+1 )
+                mem[readcnt] = {dw{1'b0}};
+            end
+    `endif
+// check contents after "check_time"
 reg [dw-1:0] mem_check[0:(2**aw)-1];
 initial begin
     #(check_time);
@@ -57,8 +60,8 @@ initial begin
         readcnt = $fread( mem_check, f );
         $fclose(f);
         for( readcnt=readcnt-1;readcnt>0; readcnt=readcnt-1) begin
-            if( mem_check[readcnt] != mem[readcnt] ) begin
-                $display("ERROR: memory content check failed for file %s (%m)", simfile );
+            if( mem_check[readcnt] !== mem[readcnt] ) begin
+                $display("\nERROR: %m\n\tmemory content check failed for file %s at position %d", simfile, readcnt );
                 $finish;
             end
         end

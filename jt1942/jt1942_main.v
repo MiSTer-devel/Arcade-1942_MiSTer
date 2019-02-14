@@ -32,6 +32,7 @@ module jt1942_main(
     output  reg        flip,
     input   [7:0]      V,
     input              LHBL,
+    input   [2:0]      H,
     // Sound
     output  reg        sres_b, // sound reset
     output  reg        snd_int,
@@ -142,8 +143,8 @@ always @(posedge clk)
     end
 
 always @(negedge clk)
-    t80_rst_n <= ~(rst | soft_rst);
-
+    t80_rst_n <= ~rst; 
+    
 `ifdef SIMULATION
 wire [7:0] random;
 
