@@ -22,6 +22,11 @@ module jtgng_rom(
     input               cen12, // 12 MHz
     input       [ 2:0]  H,
     input               Hsub,
+    input               LHBL,
+    input               LVBL,
+    output  reg         sdram_re, // any edge (rising or falling) 
+        // means a read request
+
     input       [12:0]  char_addr,
     input       [16:0]  main_addr,
     input       [14:0]  snd_addr,
@@ -42,6 +47,8 @@ module jtgng_rom(
     input       [15:0]  data_read
 );
 
+wire [3:0] rd_state = { H, Hsub }; // +4'd1;
+
 // H is used to align with the pixel transfers
 // the SDRAM-read state machine will start at roughly pixel 0 (of each 8-pixel tuple)
 // the difference in time is less than 1/2 clk24 cycle
@@ -60,80 +67,77 @@ parameter  obj_offset = 22'h20000;
 localparam col_w = 9, row_w = 13;
 localparam addr_w = 13, data_w = 16;
 
-reg pre_ready;
 reg [3:0] ready_cnt;
-
-always @(posedge clk) 
-    if(rst || downloading) begin
-        ready <= 1'b0;
-        ready_cnt <= 4'd0;
-    end else begin
-        {ready, ready_cnt}  <= {ready_cnt, pre_ready};
-    end
-
 reg [3:0] rd_state_last;
 
 `ifdef SIMULATION
-wire main_rq = rd_state[1:0]==2'b01;
-wire  snd_rq = rd_state[1:0]==2'b00;
-wire char_rq = rd_state == 4'd2;
-wire  scr_rq = rd_state == 4'd6 || rd_state==4'd7;
+wire main_rq = rd_state[1:0] ==  2'b01;
+wire  snd_rq = rd_state[2:0] == 3'b000;
 wire  obj_rq = rd_state[2:0] == 3'b011;
 `endif
+wire char_rq = rd_state == 4'd2;
+wire  scr_rq = rd_state[2:1] == 2'b11;
 
-reg cen12d;
-reg [3:0] rd_state;
+always @(posedge clk) if(cen12) begin
+    if( loop_rst || downloading )
+        sdram_re <= 1'b0;   // start strobing before ready signal
+            // because first data must be read before that signal.
+    else
+        sdram_re <= ~sdram_re;
+end
+
+// 0, 8:        sound
+// 1, 4, 9, 12: main
+// 2            char
+// 3, 11        obj
+// 6, 14, 7, 15 scr
 
 always @(posedge clk) 
 if( loop_rst || downloading ) begin
-	 //rd_state    <= { H,1'b1 };
-	 autorefresh <= 1'b0;
-	 sdram_addr <= {(addr_w+col_w){1'b0}};
-	 snd_dout  <=  8'd0;
-	 main_dout <=  8'd0;
-	 char_dout <= 16'd0;
-	 obj_dout  <= 16'd0;
-	 scr_dout  <= 24'd0;
-	 pre_ready <= 1'b0;
-end else begin
-	if(cen12) rd_state <= { H, Hsub };
-	if(cen12) rd_state_last <= rd_state;
-
-	cen12d <= cen12;
-	if(cen12d) begin
-		 pre_ready <= 1'b1;
-		 //rd_state <= rd_state + 4'd1;
-		 // Get data from current read
-		 casez(rd_state_last) // I hope the -4'd1 gets re-encoded in the
-			  // case list, rather than getting implemented as an actual adder
-			  // but it depends on how good the synthesis tool is.
-			  // Anyway, the idea is that we get the data for the last address
-			  // requested but rd_state has already gone up by 1, that's why
-			  // we need this
-			  4'b??00:    snd_dout  <=  !snd_lsb ? data_read[15:8] : data_read[ 7:0];
-			  4'b??01:    main_dout <= !main_lsb ? data_read[15:8] : data_read[ 7:0];
-			  4'd2:       char_dout <= data_read;
-			  4'd3,4'd11: obj_dout  <= data_read;
-			  4'd6:       scr_aux   <= data_read; // coding: z - y - x bytes as in G&G schematics
-			  4'd7:       scr_dout  <= { data_read[7:0] | data_read[15:8], scr_aux }; // for the upper byte, it doesn't matter which half of the word was used, as long as one half is zero.
-			  default:;
-		 endcase
-		 casez(rd_state)
-			  4'b??00: begin
-					sdram_addr <= snd_offset + { 8'b0,  snd_addr[14:1] }; // 14:0
-					snd_lsb <= snd_addr[0];
-			  end
-			  4'b??01: begin
-					sdram_addr <= { 6'd0, main_addr[16:1] }; // 16:0
-					main_lsb <= main_addr[0];
-			  end
-			  4'd2: sdram_addr <= char_offset + { 9'b0, char_addr }; // 12:0
-			  4'd3, 4'd11: sdram_addr <=  obj_offset + { 6'b0,  obj_addr }; // 15:0
-			  4'd6: sdram_addr <=  scr_offset + { 6'b0,  scr_addr }; // 14:0 B/C ROMs
-			  4'd7: sdram_addr <=  sdram_addr + scr2_offset; // scr_addr E ROMs
-			  default:;
-		 endcase 
-		 autorefresh <= rd_state==4'd14;
-	end
+    //rd_state    <= { H,1'b1 };
+    autorefresh <= 1'b0;
+    sdram_addr <= {(addr_w+col_w){1'b0}};
+    snd_dout  <=  8'd0;
+    main_dout <=  8'd0;
+    char_dout <= 16'd0;
+    obj_dout  <= 16'd0;
+    scr_dout  <= 24'd0;
+    ready_cnt <=  4'd0;    
+    ready     <=  1'b0;
+end else if(cen12) begin
+    {ready, ready_cnt}  <= {ready_cnt, 1'b1};
+    rd_state_last <= rd_state;
+    // Get data from current read
+    casez(rd_state_last) // I hope the -4'd1 gets re-encoded in the
+        // case list, rather than getting implemented as an actual adder
+        // but it depends on how good the synthesis tool is.
+        // Anyway, the idea is that we get the data for the last address
+        // requested but rd_state has already gone up by 1, that's why
+        // we need this
+        4'b??00: snd_dout  <=  !snd_lsb ? data_read[15:8] : data_read[ 7:0];
+        4'b??01: main_dout <= !main_lsb ? data_read[15:8] : data_read[ 7:0];
+        4'b0010: char_dout <= data_read;
+        4'b?011: obj_dout  <= data_read;
+        4'b?110: scr_aux   <= data_read; // coding: z - y - x bytes as in G&G schematics
+        4'b?111: scr_dout  <= { data_read[7:0] | data_read[15:8], scr_aux }; // for the upper byte, it doesn't matter which half of the word was used, as long as one half is zero.
+        default:;
+    endcase
+    casez(rd_state)
+        4'b??00: begin
+            sdram_addr <= snd_offset + { 8'b0,  snd_addr[14:1] }; // 14:0
+            snd_lsb <= snd_addr[0];
+        end
+        4'b??01: begin
+            sdram_addr <= { 6'd0, main_addr[16:1] }; // 16:0
+            main_lsb <= main_addr[0];
+        end
+        4'b0010: sdram_addr <= char_offset + { 9'b0, char_addr }; // 12:0
+        4'b?011: sdram_addr <=  obj_offset + { 6'b0,  obj_addr }; // 15:0
+        4'b?110: sdram_addr <=  scr_offset + { 6'b0,  scr_addr }; // 14:0 B/C ROMs
+        4'b?111: sdram_addr <=  sdram_addr + scr2_offset; // scr_addr E ROMs
+        default:;
+    endcase 
+    autorefresh <= !LVBL && (char_rq || scr_rq); // rd_state==4'd14;
 end
+
 endmodule // jtgng_rom

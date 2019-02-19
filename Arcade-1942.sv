@@ -244,9 +244,7 @@ arcade_rotate_fx #(256,224,12,1) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
-reg prog_we;
-always @(posedge clk_sys) prog_we <= ioctl_wr;
-
+reg         prog_we;
 wire [16:0] prog_addr;
 wire  [7:0] prog_data;
 wire  [1:0] prog_mask; 
@@ -312,14 +310,15 @@ jt1942_game game
 	.data_read   ( rom_data ),
 
 	// PROM programming
-	.ioctl_addr(ioctl_addr),
-	.ioctl_data(ioctl_dout),
-	.ioctl_wr(ioctl_wr),
-	.prog_addr(prog_addr),
-	.prog_data(prog_data),
-	.prog_mask(prog_mask),
+	.ioctl_addr  ( ioctl_addr ),
+	.ioctl_data  ( ioctl_dout ),
+	.ioctl_wr    ( ioctl_wr   ),
+	.prog_addr   ( prog_addr  ),
+	.prog_data   ( prog_data  ),
+	.prog_mask   ( prog_mask  ),
+	.prog_we     ( prog_we    ),
 
-	.cheat_invincible( status[10]  ),
+	.cheat_invincible( status[10] ),
 	.dip_pause   ( ~pause         ),
 	.dip_level   ( ~status[13:12] ),
 	.dip_upright ( 0              ),
@@ -327,6 +326,7 @@ jt1942_game game
 	.dip_price   ( 3'b111         ), // 1 credit, 1 coin
 	.dip_bonus   ( ~status[9:8]   ),
 	.dip_test    ( 1              ),
+
 	.snd         ( audio          )
 );
 

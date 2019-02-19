@@ -54,7 +54,7 @@ always @(posedge clk) begin
         end
         else begin
             //Hinit <= 1'b0;
-            H <= H + { 8'd0, Hsub};
+            H <= H + Hsub;
         end
     end
 end
@@ -77,11 +77,8 @@ wire [9:0] LHBL_obj1 = 10'd263-obj_offset;
 
 // L Horizontal/Vertical Blanking
 always @(posedge clk) 
-    if( rst ) begin
-        LVBL <= 1'b0;
-        VS   <= 1'b0;
-        HS   <= 1'b0;
-    end else if(cen6) begin
+    if( rst ) LVBL <= 1'b0;
+    else if(cen6) begin
         if( H==LHBL_obj1[8:0] ) LHBL_obj<=1'b1;
         if( H==LHBL_obj0[8:0] ) LHBL_obj<=1'b0;
         if( &H[2:0] ) begin

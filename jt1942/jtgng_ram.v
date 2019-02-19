@@ -36,7 +36,7 @@ if( simfile != "" ) begin
         readcnt=$fread( mem, f );
         $fclose(f);
     end else begin
-        $display("WARNING %m: Cannot open file %s", simfile);
+        $display("WARNING: Cannot open file", simfile);
     end
     end
 else begin

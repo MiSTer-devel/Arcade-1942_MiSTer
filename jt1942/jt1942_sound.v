@@ -101,12 +101,12 @@ if( rst ) begin
 end else if(cen3) begin
     if( main_latch1_cs ) latch1 <= main_dout;
     if( main_latch0_cs ) latch0 <= main_dout;
-    // `ifdef SIMULATION
-    //     if( main_latch1_cs ) 
-    //         $display("(%X) SND LATCH 1 = $%X", $time/1000, main_dout );
-    //     if( main_latch0_cs ) 
-    //         $display("(%X) SND LATCH 0 = $%X", $time/1000, main_dout );
-    // `endif
+    `ifdef SIMULATION
+        if( main_latch1_cs ) 
+            $display("(%X) SND LATCH 1 = $%X", $time/1000, main_dout );
+        if( main_latch0_cs ) 
+            $display("(%X) SND LATCH 0 = $%X", $time/1000, main_dout );
+    `endif
 end
 
 wire rd_n;

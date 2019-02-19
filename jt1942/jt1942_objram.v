@@ -76,9 +76,9 @@ if( !SEATM_b && pxlcnt==4'd6 ) case(scan[6:2])
     // 5'd4: {objbuf_data0,objbuf_data1,objbuf_data2,objbuf_data3} <= 32'he0_40_80_a0;
     // 5'd5: {objbuf_data0,objbuf_data1,objbuf_data2,objbuf_data3} <= 32'he1_40_b0_a0;
     // 5'd6: {objbuf_data0,objbuf_data1,objbuf_data2,objbuf_data3} <= 32'he4_40_80_80;
-    5'd7: {objbuf_data0,objbuf_data1,objbuf_data2,objbuf_data3} <= 32'h6c_a6_40_20;
+    //5'd7: {objbuf_data0,objbuf_data1,objbuf_data2,objbuf_data3} <= 32'h6c_a6_40_20;
     5'd8: {objbuf_data0,objbuf_data1,objbuf_data2,objbuf_data3} <= 32'h6C_A6_61_20;
-    //5'd9: {objbuf_data0,objbuf_data1,objbuf_data2,objbuf_data3} <= 32'h6C_00_00_20;
+    5'd9: {objbuf_data0,objbuf_data1,objbuf_data2,objbuf_data3} <= 32'h6C_00_00_20;
     default: {objbuf_data0,objbuf_data1,objbuf_data2,objbuf_data3} <= 32'h0;
 endcase
 `endif

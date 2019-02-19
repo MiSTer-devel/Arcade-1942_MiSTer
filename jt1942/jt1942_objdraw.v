@@ -50,9 +50,9 @@ reg VINZONE;
 reg [1:0] vlen;
 reg VINcmp, VINlen, Veq, Vlt; // Vgt;
 
-//always @(posedge clk) if(cen6) begin
-//    if(pxlcnt[3:0]==4'b0 ) V2C <= ~VF + { {7{~flip}}, 1'b1 }; // V 2's complement
-//end
+always @(posedge clk) if(cen6) begin
+    if(pxlcnt[2:0]==3'b0 ) V2C <= ~VF + { {7{~flip}}, 1'b1 }; // V 2's complement
+end
 
 // signal aliases
 wire [7:0] next_AD    = objbuf_data0;
@@ -88,7 +88,6 @@ reg [8:0] posx0, posx1;
 reg [3:0] CD2;
 
 always @(posedge clk) if( cen6 ) begin
-    if( pxlcnt[3:0] == 4'd6 ) V2C <= ~VF + { {7{~flip}}, 1'b1 }; // V 2's complement
     if( pxlcnt[3:0] == 4'd7 )begin
         pre_addr[14:10] <= {next_AD[7], next_ADext, next_AD[6:4]};
         case( next_vlen )

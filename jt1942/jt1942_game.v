@@ -41,17 +41,18 @@ module jt1942_game(
     input           downloading,
     input           loop_rst,
     output          autorefresh,
+    output          sdram_re,
     output  [21:0]  sdram_addr,
     input   [15:0]  data_read,
 
-    // PROM programming
-    input       [21:0] ioctl_addr,
-    input       [ 7:0] ioctl_data,
-    output      [21:0] prog_addr,
-    output      [ 7:0] prog_data,
-    input              ioctl_wr,
-    output      [ 1:0] prog_mask,
-
+    // ROM LOAD
+    input   [21:0]  ioctl_addr, 
+    input   [ 7:0]  ioctl_data,
+    input           ioctl_wr,   
+    output  [21:0]  prog_addr,
+    output  [ 7:0]  prog_data,
+    output  [ 1:0]  prog_mask,
+    output          prog_we,
     // cheat
     input           cheat_invincible,
     // DIP Switch A
@@ -81,20 +82,14 @@ wire [ 7:0] chram_dout,scram_dout;
 wire rd;
 wire rom_ready;
 
-reg rst_game=1'b1;
-reg rst_aux;
-
 assign sample=1'b1;
 
-always @(posedge clk)
-    if( rst || !rom_ready ) begin
-        {rst_game,rst_aux} <= 2'b11;
-    end
-    else begin
-        {rst_game,rst_aux} <= {rst_aux, downloading };
-    end
-
 wire LHBL_obj, Hsub;
+
+reg rst_game;
+
+always @(negedge clk)
+    rst_game <= rst || !rom_ready;
 
 jtgng_timer u_timer(
     .clk       ( clk      ),
@@ -138,13 +133,18 @@ wire char_wait_n, scr_wait_n;
 wire [9:0] prom_we;
 jt1942_prom_we u_prom_we(
     .clk_rom     ( clk_rom       ),
+    .clk_rgb     ( clk           ),
     .downloading ( downloading   ), 
+
     .ioctl_wr    ( ioctl_wr      ),
     .ioctl_addr  ( ioctl_addr    ),
     .ioctl_data  ( ioctl_data    ),
+
     .prog_data   ( prog_data     ),
     .prog_mask   ( prog_mask     ),
     .prog_addr   ( prog_addr     ),
+    .prog_we     ( prog_we       ),
+
     .prom_we     ( prom_we       )
 );
 
@@ -160,10 +160,10 @@ wire prom_k3_we  = prom_we[8];
 wire prom_m11_we = prom_we[9];
 
 jt1942_main u_main(
+    .rst        ( rst_game      ),
     .clk        ( clk           ),
     .cen6       ( cen6          ),
     .cen3       ( cen3          ),
-    .rst        ( rst_game      ),
     .char_wait_n( char_wait_n   ),
     .scr_wait_n ( scr_wait_n    ),
     .char_dout  ( chram_dout    ),
@@ -175,29 +175,28 @@ jt1942_main u_main(
     .snd_latch1_cs ( snd_latch1_cs ),
     .snd_int       ( snd_int       ),
     
-    .LHBL        ( LHBL         ),
-    .cpu_dout    ( cpu_dout     ),
-    .char_cs     ( char_cs      ),
-    .scr_cs      ( scr_cs       ),
-    .scrpos_cs   ( scrpos_cs    ),
-    .obj_cs      ( obj_cs       ),
-    .flip        ( flip         ),
-    .V           ( V[7:0]       ),
-    .H           ( H[2:0]       ),
-    .cpu_AB      ( cpu_AB       ),
-    .rd_n        ( rd_n         ),
-    .wr_n        ( wr_n         ),
-    .rom_addr    ( main_addr    ),
-    .rom_data    ( main_data    ),
+    .LHBL       ( LHBL          ),
+    .cpu_dout   ( cpu_dout      ),
+    .char_cs    ( char_cs       ),
+    .scr_cs     ( scr_cs        ),
+    .scrpos_cs  ( scrpos_cs     ),
+    .obj_cs     ( obj_cs        ),
+    .flip       ( flip          ),
+    .V          ( V[7:0]        ),
+    .cpu_AB     ( cpu_AB        ),
+    .rd_n       ( rd_n          ),
+    .wr_n       ( wr_n          ),
+    .rom_addr   ( main_addr     ),
+    .rom_data   ( main_data     ),
     // Cabinet input
     .start_button( start_button ),
     .coin_input  ( coin_input   ),
     .joystick1   ( joystick1    ),
     .joystick2   ( joystick2    ),   
     // PROM K6
-    .prog_addr   ( prog_addr[7:0] ),
-    .prog_din    ( prog_data[3:0] ),
-    .prom_k6_we  ( prom_k6_we   ),
+    .prog_addr  ( prog_addr[7:0]),
+    .prom_k6_we ( prom_k6_we    ),
+    .prog_din   ( prog_data[3:0]),
     // Cheat
     .cheat_invincible( cheat_invincible ),
     // DIP switches
@@ -208,10 +207,10 @@ jt1942_main u_main(
 
 `ifndef NOSOUND
 jt1942_sound u_sound (
+    .rst            ( rst_game       ),
     .clk            ( clk            ),
     .cen3           ( cen3           ),
     .cen1p5         ( cen1p5         ),
-    .rst            ( rst_game       ),
     .sres_b         ( sres_b         ),
     .main_dout      ( cpu_dout       ),
     .main_latch0_cs ( snd_latch0_cs  ),
@@ -266,8 +265,8 @@ jt1942_video u_video(
     .green      ( green         ),
     .blue       ( blue          ),
     // PROM access
-    .prog_addr  ( prog_addr[7:0] ),
-    .prog_din   ( prog_data[3:0] ),
+    .prog_addr  ( prog_addr[7:0]),
+    .prog_din   ( prog_data[3:0]),
     .prom_f1_we ( prom_f1_we    ),
     .prom_d1_we ( prom_d1_we    ),
     .prom_d2_we ( prom_d2_we    ),
@@ -291,6 +290,10 @@ jtgng_rom #(
     .cen12       ( cen12         ),
     .H           ( H[2:0]        ),
     .Hsub        ( Hsub          ),
+    .LHBL        ( LHBL          ),
+    .LVBL        ( LVBL          ),
+    .sdram_re    ( sdram_re      ),
+    
     .char_addr   ( {1'b0,char_addr} ),
     .main_addr   ( main_addr     ),
     .snd_addr    ( snd_addr      ),

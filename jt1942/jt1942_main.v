@@ -23,7 +23,6 @@ module jt1942_main(
     input              cen6,   // 6MHz
     input              cen3    /* synthesis direct_enable = 1 */,   // 3MHz
     input              rst,
-    input              soft_rst,
     input              [7:0] char_dout,
     output             [7:0] cpu_dout,
     output  reg        char_cs,
@@ -32,7 +31,6 @@ module jt1942_main(
     output  reg        flip,
     input   [7:0]      V,
     input              LHBL,
-    input   [2:0]      H,
     // Sound
     output  reg        sres_b, // sound reset
     output  reg        snd_int,
@@ -143,8 +141,8 @@ always @(posedge clk)
     end
 
 always @(negedge clk)
-    t80_rst_n <= ~rst; 
-    
+    t80_rst_n <= ~rst;
+
 `ifdef SIMULATION
 wire [7:0] random;
 
