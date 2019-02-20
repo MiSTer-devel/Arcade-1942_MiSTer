@@ -138,7 +138,7 @@ always @(posedge clk) begin
 			
 			old_buff <= buff;
 			if(old_buff != buff) begin
-				addr_out <= old_buff ? {aw{1'b0}} : bufsize[aw-1:0];
+				addr_out <= buff ? {aw{1'b0}} : bufsize[aw-1:0];
 				yposo <= 0;
 				vsync <= 0;
 				vbcnt <= 0;
