@@ -14,6 +14,7 @@
 --   F2         : Start 2 players
 --   F3         : Add Coin
 --   F4         : Pause
+--   F5         : Test Switch
 --   SPACE      : Jump
 --   CTRL,ALT   : Fire
 --   UP,DOWN,LEFT,RIGHT : Movements
@@ -21,7 +22,8 @@
 -- Joystick support.
 -- 
 --
--- Note: in continue screen use combo Fire + 1P/2P to continue
+-- Note1: in continue screen use combo Fire + 1P/2P to continue
+-- Note2: in flipped mode you can see glitches in logo..
 --
 ---------------------------------------------------------------------------------
 

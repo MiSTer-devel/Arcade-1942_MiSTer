@@ -97,6 +97,7 @@ localparam CONF_STR = {
 	"O67,Lives,3,1,2,5;",
 	"O89,Bonus,30/100,30/80,20/100,20/80;",
 	"OA,Invulnerability,No,Yes;",
+	"OB,Screen flip,No,Yes;",
 	"-;",
 	"R0,Reset;",
 	"J,Fire,Loop,Start 1P,Start 2P,Coin,Pause;",
@@ -178,6 +179,7 @@ always @(posedge clk_sys) begin
 			'h06: btn_two_players<= pressed; // F2
 			'h04: btn_coin			<= pressed; // F3
 			'h0C: btn_pause		<= pressed; // F4
+			'h03: btn_test			<= pressed; // F5
 			'h14: btn_fire1 		<= pressed; // ctrl
 			'h11: btn_fire1 		<= pressed; // alt
 			'h29: btn_fire2   	<= pressed; // Space
@@ -195,6 +197,7 @@ reg btn_fire1 = 0;
 reg btn_fire2 = 0;
 reg btn_coin  = 0;
 reg btn_pause = 0;
+reg btn_test  = 0;
 
 wire [15:0] joy = joy_0 | joy_1;
 
@@ -325,7 +328,8 @@ jt1942_game game
 	.dip_planes  ( ~status[7:6]   ),
 	.dip_price   ( 3'b111         ), // 1 credit, 1 coin
 	.dip_bonus   ( ~status[9:8]   ),
-	.dip_test    ( 1              ),
+	.dip_test    ( ~btn_test      ),
+	.dip_flip    ( status[2] & status[11] ),
 
 	.snd         ( audio          )
 );

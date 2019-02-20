@@ -21,6 +21,7 @@ module jtgng_timer(
     input               cen12,  // 12 MHz
     input               cen6,   //  6 MHz
     input               rst,
+	 input               flip,
     output  reg [8:0]   V,
     output  reg [8:0]   H,
     output  reg         Hsub,
@@ -75,6 +76,8 @@ end
 wire [9:0] LHBL_obj0 = 10'd135-obj_offset >= 10'd128 ? 10'd135-obj_offset : 10'd135-obj_offset+10'd512-10'd128;
 wire [9:0] LHBL_obj1 = 10'd263-obj_offset;
 
+reg lhbl;
+
 // L Horizontal/Vertical Blanking
 always @(posedge clk) 
     if( rst ) LVBL <= 1'b0;
@@ -82,14 +85,15 @@ always @(posedge clk)
         if( H==LHBL_obj1[8:0] ) LHBL_obj<=1'b1;
         if( H==LHBL_obj0[8:0] ) LHBL_obj<=1'b0;
         if( &H[2:0] ) begin
-            LHBL <= H[8];
-        // LHBL <= H>=256;
+            if(flip) lhbl <= H[8]; else LHBL <= H[8];
             if( V==9'd496 ) LVBL <= 1'b0;
             if( V==9'd272 ) LVBL <= 1'b1;
 
             if( V==9'd507 ) VS <= 1;
             if( V==9'd510 ) VS <= 0;
         end
+
+        if(flip) LHBL <= lhbl;
 
         if (H==9'd178) HS <= 1;
         if (H==9'd206) HS <= 0;
