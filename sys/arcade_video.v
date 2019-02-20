@@ -22,7 +22,7 @@
 // Output timings are incompatible with any TV/VGA mode.
 // The output is supposed to be send to scaler input.
 //
-module screen_rotate #(parameter WIDTH=320, HEIGHT=240, DEPTH=8, MARGIN=8, CCW=0)
+module screen_rotate #(parameter WIDTH=320, HEIGHT=240, DEPTH=8, MARGIN=4, CCW=0)
 (
 	input              clk,
 	input              ce,
@@ -235,7 +235,7 @@ endgenerate
 wire [DW-1:0] RGB_out;
 wire rhs,rvs,rhblank,rvblank;
 
-screen_rotate #(WIDTH,HEIGHT,DW,8,CCW) rotator
+screen_rotate #(WIDTH,HEIGHT,DW,4,CCW) rotator
 (
 	.clk(VGA_CLK),
 	.ce(VGA_CE),
