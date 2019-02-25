@@ -97,7 +97,6 @@ localparam CONF_STR = {
 	"O67,Lives,3,1,2,5;",
 	"O89,Bonus,30/100,30/80,20/100,20/80;",
 	"OA,Invulnerability,No,Yes;",
-	"OB,Screen flip,No,Yes;",
 	"-;",
 	"R0,Reset;",
 	"J,Fire,Loop,Start 1P,Start 2P,Coin,Pause;",
@@ -329,7 +328,7 @@ jt1942_game game
 	.dip_price   ( 3'b111         ), // 1 credit, 1 coin
 	.dip_bonus   ( ~status[9:8]   ),
 	.dip_test    ( ~btn_test      ),
-	.dip_flip    ( status[2] & status[11] ),
+	.dip_flip    ( 0              ),
 
 	.snd         ( audio          )
 );

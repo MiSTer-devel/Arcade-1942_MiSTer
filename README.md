@@ -21,7 +21,6 @@ Copy the `*.rbf` and `a.1942.rom` into the root folder of the SD card.
 Joystick support
 
  - *Note1: in continue screen use combo Fire + 1P/2P to continue*
- - *Note2: in flipped mode you can see glitches in logo.*
 
 ## Building ROM 
 ### :rotating_light: :rotating_light: :rotating_light: Attention!! :rotating_light: :rotating_light: :rotating_light:
